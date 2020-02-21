@@ -10,10 +10,7 @@ class arkanoidMain:
         self.screen_width, self.screen_height = 800, 600
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
 
-        self.paddle_x, self.paddle_y = self.screen_width//2 - 45, self.screen_height - 25
-        self.paddle = pygame.rect.Rect(self.paddle_x, self.paddle_y, 90, 15)
-
-        self.ball_x, self.ball_y = self.paddle_x + 40, self.paddle_y - 10
+        self.ball_x, self.ball_y =  395, 565
         self.ball = pygame.rect.Rect(self.ball_x, self.ball_y, 10, 10)
         self.ball_velocity_x, self.ball_velocity_y = 18, -18
 
@@ -28,6 +25,8 @@ class arkanoidMain:
 
     def arkanoid(self):
         self.bricks = pygame.sprite.Group()
+        self.paddle = paddle()
+        self.paddles = pygame.sprite.Group(self.paddle)
         self.draw_brick()
         while self.run:
             pygame.time.delay(100)
@@ -42,38 +41,31 @@ class arkanoidMain:
             pygame.display.flip()
         pygame.quit()
 
-    def brick_collide(self):
-        for brick in pygame.sprite.spritecollide(self.ball, self.bricks, 1):
-            self.points += 1
-
-
-
     def draw_brick(self):
         for i in range(0, 16):
-            count = i
             name = 's' + str(i)
-            setattr(self, name, (self.bricks.add(brick(i*50, count))))
+            setattr(self, name, (self.bricks.add(brick(i*50))))
 
     def movement(self):
         # moving paddle left if key is pressed  also restricting movement in screen size
         if self.left_arrow_down:
-            if self.paddle.left - 20 < 0:
-                self.paddle.left = 0
+            if self.paddle.rect.left - 20 < 0:
+                self.paddle.rect.left = 0
             else:
-                self.paddle.left -= 20
+                self.paddle.rect.left -= 20
             if not self.has_space_pressed:
-                if self.paddle.left - 20 < 0:
+                if self.paddle.rect.left - 20 < 0:
                     self.ball.left = self.ball.left
                 else:
                     self.ball.left -= 20
         # moving paddle right if key is pressed also restricting movement in screen size
         if self.right_arrow_down:
-            if self.paddle.right + 20 > self.screen_width:
-                self.paddle.right = self.screen_width
+            if self.paddle.rect.right + 20 > self.screen_width:
+                self.paddle.rect.right = self.screen_width
             else:
-                self.paddle.right += 20
+                self.paddle.rect.right += 20
             if not self.has_space_pressed:
-                if self.paddle.right + 20 > self.screen_width:
+                if self.paddle.rect.right + 20 > self.screen_width:
                     self.ball.left = self.ball.left
                 else:
                     self.ball.right += 20
@@ -94,8 +86,8 @@ class arkanoidMain:
                     self.ball.right += self.ball_velocity_x
             # checking if ball is going up or down and if hits top, paddle, or bottom screen
             if self.ball_velocity_y > 0:
-                if (self.ball.bottom + self.ball_velocity_y > self.paddle.top) and ((self.ball.left > self.paddle.left) and (self.ball.right < self.paddle.right)):
-                    self.ball.bottom = self.paddle.top
+                if (self.ball.bottom + self.ball_velocity_y > self.paddle.rect.top) and ((self.ball.left > self.paddle.rect.left) and (self.ball.right < self.paddle.rect.right)):
+                    self.ball.bottom = self.paddle.rect.top
                     self.ball_velocity_y *= -1
                 elif self.ball.bottom > self.screen_height:
                     self.lost = True
@@ -109,9 +101,9 @@ class arkanoidMain:
                     self.ball.top += self.ball_velocity_y
 
     def draw(self, surface):
-        pygame.draw.rect(surface, (0, 0, 128), self.paddle)
         pygame.draw.rect(surface, (0, 0, 0), self.ball)
         self.bricks.draw(surface)
+        self.paddles.draw(surface)
 
     def eventmanager(self):
         for event in pygame.event.get():
@@ -134,10 +126,9 @@ class arkanoidMain:
                     self.right_arrow_down = False
 
 class brick(pygame.sprite.Sprite):
-    def __init__(self, x, count):
+    def __init__(self, x):
         pygame.sprite.Sprite.__init__(self)
         width, height = 50, 25
-        self.count = count
         self.color = self.getrandomcolor()
         self.image = pygame.Surface([width, height])
         self.image.fill(self.color)
@@ -146,8 +137,16 @@ class brick(pygame.sprite.Sprite):
     def getrandomcolor(self):
         colors = [(255, 0, 0), (255, 128, 0), (255, 255, 0), (128, 255, 0), (0, 255, 0), (0, 255, 128), (0, 255, 255), (0, 128, 255), (0, 0, 255), (128, 0, 255), (255, 0, 255), (255, 0, 128)]
         color = colors[randint(1, 11)]
-        self.count += 1
         return color
+
+class paddle(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        width, height = 90, 15
+        self.paddle_x, self.paddle_y = 355, 575
+        self.image = pygame.Surface([width, height])
+        self.image.fill((0, 0, 128))
+        self.rect = self.image.get_rect().move(self.paddle_x, self.paddle_y)
 
 
 if __name__ == "__main__":
