@@ -12,12 +12,18 @@ class arkanoidMain:
 
         self.ball_velocity_x, self.ball_velocity_y = 18, -18
 
+
         self.points = 0
         self.run = True
         self.left_arrow_down = False
         self.right_arrow_down = False
         self.has_space_pressed = False
         self.lost = False
+        self.font = pygame.font.Font('freesansbold.ttf', 32)
+        self.loss_text = self.font.render(str(self.points), True, (0, 0, 0), (255, 0, 0))
+        self.loss_textRect = self.loss_text.get_rect()
+        self.loss_textRect.center = (self.screen_width//2, self.screen_height//2)
+                
 
         self.arkanoid()
 
@@ -33,16 +39,33 @@ class arkanoidMain:
         self.draw_brick()
         while self.run:
             pygame.time.delay(100)
+            self.collide_check()
             self.eventmanager()
             self.movement()
-            self.screen.fill((128, 128, 128))
-            ##make func for losing screen
-            if self.lost:
-                self.screen.fill((255, 0, 0))
-
+            self.lose_screen()
             self.draw(self.screen)
             pygame.display.flip()
         pygame.quit()
+    
+    def lose_screen(self):
+        if self.lost == True:
+            self.screen.fill((255, 0, 0))
+            self.ball.kill()
+            self.loss_text = self.font.render(str(self.points), True, (0, 0, 0), (255, 0, 0))
+            self.loss_textRect = self.loss_text.get_rect()
+            self.loss_textRect.center = (self.screen_width//2, self.screen_height//2)
+            self.screen.blit(self.loss_text, self.loss_textRect)
+
+        else:
+            self.screen.fill((128, 128, 128))
+
+
+    
+    def collide_check(self):
+        bricks = len(self.bricks.sprites())
+        pygame.sprite.spritecollide(self.ball, self.bricks, 1)
+        if len(self.bricks.sprites()) < bricks:
+            self.points += bricks - len(self.bricks.sprites())
 
     def draw_brick(self):
         for i in range(0, 16):
