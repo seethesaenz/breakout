@@ -10,8 +10,6 @@ class arkanoidMain:
         self.screen_width, self.screen_height = 800, 600
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
 
-        self.ball_x, self.ball_y =  395, 565
-        self.ball = pygame.rect.Rect(self.ball_x, self.ball_y, 10, 10)
         self.ball_velocity_x, self.ball_velocity_y = 18, -18
 
         self.points = 0
@@ -23,10 +21,15 @@ class arkanoidMain:
 
         self.arkanoid()
 
-    def arkanoid(self):
+    def sprite_groups(self):
         self.bricks = pygame.sprite.Group()
         self.paddle = paddle()
-        self.paddles = pygame.sprite.Group(self.paddle)
+        self.ball = ball()
+        self.balls = pygame.sprite.GroupSingle(self.ball)
+        self.paddles = pygame.sprite.GroupSingle(self.paddle)
+
+    def arkanoid(self):
+        self.sprite_groups()
         self.draw_brick()
         while self.run:
             pygame.time.delay(100)
@@ -55,9 +58,9 @@ class arkanoidMain:
                 self.paddle.rect.left -= 20
             if not self.has_space_pressed:
                 if self.paddle.rect.left - 20 < 0:
-                    self.ball.left = self.ball.left
+                    self.ball.rect.left = self.ball.rect.left
                 else:
-                    self.ball.left -= 20
+                    self.ball.rect.left -= 20
         # moving paddle right if key is pressed also restricting movement in screen size
         if self.right_arrow_down:
             if self.paddle.rect.right + 20 > self.screen_width:
@@ -66,42 +69,42 @@ class arkanoidMain:
                 self.paddle.rect.right += 20
             if not self.has_space_pressed:
                 if self.paddle.rect.right + 20 > self.screen_width:
-                    self.ball.left = self.ball.left
+                    self.ball.rect.left = self.ball.rect.left
                 else:
-                    self.ball.right += 20
+                    self.ball.rect.right += 20
 
         if self.has_space_pressed:
             # checking if ball is going right or left and if hits wall change the direction
             if self.ball_velocity_x > 0:
-                if self.ball.right + self.ball_velocity_x > self.screen_width:
-                    self.ball.right = self.screen_width
+                if self.ball.rect.right + self.ball_velocity_x > self.screen_width:
+                    self.ball.rect.right = self.screen_width
                     self.ball_velocity_x *= -1
                 else:
-                    self.ball.right += self.ball_velocity_x
+                    self.ball.rect.right += self.ball_velocity_x
             else:
-                if self.ball.left + self.ball_velocity_x < 0:
-                    self.ball.left = 0
+                if self.ball.rect.left + self.ball_velocity_x < 0:
+                    self.ball.rect.left = 0
                     self.ball_velocity_x *= -1
                 else:
-                    self.ball.right += self.ball_velocity_x
+                    self.ball.rect.right += self.ball_velocity_x
             # checking if ball is going up or down and if hits top, paddle, or bottom screen
             if self.ball_velocity_y > 0:
-                if (self.ball.bottom + self.ball_velocity_y > self.paddle.rect.top) and ((self.ball.left > self.paddle.rect.left) and (self.ball.right < self.paddle.rect.right)):
-                    self.ball.bottom = self.paddle.rect.top
+                if (self.ball.rect.bottom + self.ball_velocity_y > self.paddle.rect.top) and ((self.ball.rect.left > self.paddle.rect.left) and (self.ball.rect.right < self.paddle.rect.right)):
+                    self.ball.rect.bottom = self.paddle.rect.top
                     self.ball_velocity_y *= -1
-                elif self.ball.bottom > self.screen_height:
+                elif self.ball.rect.bottom > self.screen_height:
                     self.lost = True
                 else:
-                    self.ball.top += self.ball_velocity_y
+                    self.ball.rect.top += self.ball_velocity_y
             else:
-                if self.ball.top + self.ball_velocity_y < 0:
-                    self.ball.top = 0
+                if self.ball.rect.top + self.ball_velocity_y < 0:
+                    self.ball.rect.top = 0
                     self.ball_velocity_y *= -1
                 else:
-                    self.ball.top += self.ball_velocity_y
+                    self.ball.rect.top += self.ball_velocity_y
 
     def draw(self, surface):
-        pygame.draw.rect(surface, (0, 0, 0), self.ball)
+        self.balls.draw(surface)
         self.bricks.draw(surface)
         self.paddles.draw(surface)
 
@@ -148,6 +151,15 @@ class paddle(pygame.sprite.Sprite):
         self.image.fill((0, 0, 128))
         self.rect = self.image.get_rect().move(self.paddle_x, self.paddle_y)
 
+class ball(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        width, height = 10, 10
+        self.ball_x, self.ball_y = 395, 565
+        self.image = pygame.Surface([width, height])
+        self.image.fill((0, 0, 0))
+        self.rect = pygame.rect.Rect(self.ball_x, self.ball_y, 10, 10)
+        
 
 if __name__ == "__main__":
     arkanoidMain()
