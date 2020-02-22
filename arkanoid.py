@@ -5,12 +5,13 @@ class arkanoidMain:
 
     def __init__(self):
         pygame.init()
+        self.clock = pygame.time.Clock()
         pygame.display.set_caption('Arkanoid')
 
         self.screen_width, self.screen_height = 800, 600
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
 
-        self.ball_velocity_x, self.ball_velocity_y = 18, -18
+        self.ball_velocity_x, self.ball_velocity_y = 5, -5
 
 
         self.points = 0
@@ -38,24 +39,25 @@ class arkanoidMain:
         self.sprite_groups()
         self.draw_brick()
         while self.run:
-            pygame.time.delay(100)
             self.collide_check()
             self.eventmanager()
             self.movement()
             self.lose_screen()
             self.draw(self.screen)
             pygame.display.flip()
+            self.clock.tick(60)
         pygame.quit()
     
     def lose_screen(self):
-        if self.lost == True:
+        if self.lost:
             self.screen.fill((255, 0, 0))
             self.ball.kill()
+            self.ball_velocity_x = 0
+            self.ball_velocity_y = 0
             self.loss_text = self.font.render(str(self.points), True, (0, 0, 0), (255, 0, 0))
             self.loss_textRect = self.loss_text.get_rect()
             self.loss_textRect.center = (self.screen_width//2, self.screen_height//2)
             self.screen.blit(self.loss_text, self.loss_textRect)
-
         else:
             self.screen.fill((128, 128, 128))
 
@@ -80,10 +82,7 @@ class arkanoidMain:
             else:
                 self.paddle.rect.left -= 20
             if not self.has_space_pressed:
-                if self.paddle.rect.left - 20 < 0:
-                    self.ball.rect.left = self.ball.rect.left
-                else:
-                    self.ball.rect.left -= 20
+                self.ball.rect.midbottom = self.paddle.rect.midtop
         # moving paddle right if key is pressed also restricting movement in screen size
         if self.right_arrow_down:
             if self.paddle.rect.right + 20 > self.screen_width:
@@ -91,10 +90,7 @@ class arkanoidMain:
             else:
                 self.paddle.rect.right += 20
             if not self.has_space_pressed:
-                if self.paddle.rect.right + 20 > self.screen_width:
-                    self.ball.rect.left = self.ball.rect.left
-                else:
-                    self.ball.rect.right += 20
+                self.ball.rect.midbottom = self.paddle.rect.midtop
 
         if self.has_space_pressed:
             # checking if ball is going right or left and if hits wall change the direction
@@ -112,9 +108,19 @@ class arkanoidMain:
                     self.ball.rect.right += self.ball_velocity_x
             # checking if ball is going up or down and if hits top, paddle, or bottom screen
             if self.ball_velocity_y > 0:
-                if (self.ball.rect.bottom + self.ball_velocity_y > self.paddle.rect.top) and ((self.ball.rect.left > self.paddle.rect.left) and (self.ball.rect.right < self.paddle.rect.right)):
+                if (self.ball.rect.left > self.paddle.rect.left and self.ball.rect.right < self.paddle.rect.right) and (self.ball.rect.bottom + self.ball_velocity_y > self.paddle.rect.top):
                     self.ball.rect.bottom = self.paddle.rect.top
-                    self.ball_velocity_y *= -1
+                    if self.ball.rect.midbottom == self.paddle.rect.midtop:
+                        self.ball_velocity_y = 8
+                    elif self.ball.rect.bottomleft < self.paddle.rect.midtop:
+                        print(self.paddle.rect.midtop, self.ball.rect.midleft)
+                        self.ball_velocity_x = -1 * (self.paddle.rect.midtop[0] - self.ball.rect.bottomleft[0])//9
+                        self.ball_velocity_y = -8 - self.ball_velocity_x
+                    elif self.ball.rect.bottomright > self.paddle.rect.midtop:
+                        print(self.paddle.rect.midtop, self.ball.rect.midleft)
+                        self.ball_velocity_x = (-1 * (self.paddle.rect.midtop[0] - self.ball.rect.bottomright[0])//9)
+                        self.ball_velocity_y = -8 + self.ball_velocity_x
+
                 elif self.ball.rect.bottom > self.screen_height:
                     self.lost = True
                 else:
@@ -125,6 +131,7 @@ class arkanoidMain:
                     self.ball_velocity_y *= -1
                 else:
                     self.ball.rect.top += self.ball_velocity_y
+
 
     def draw(self, surface):
         self.balls.draw(surface)
