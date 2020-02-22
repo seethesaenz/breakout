@@ -19,11 +19,13 @@ class arkanoidMain:
         self.left_arrow_down = False
         self.right_arrow_down = False
         self.has_space_pressed = False
+        self.debugbool = False
         self.lost = False
         self.font = pygame.font.Font('freesansbold.ttf', 32)
         self.loss_text = self.font.render(str(self.points), True, (0, 0, 0), (255, 0, 0))
         self.loss_textRect = self.loss_text.get_rect()
         self.loss_textRect.center = (self.screen_width//2, self.screen_height//2)
+        self.powerup_y_velocity = 5
 
         self.sprite_groups()
 
@@ -33,6 +35,7 @@ class arkanoidMain:
         self.bricks = pygame.sprite.Group()
         self.paddle = paddle()
         self.ball = ball()
+        self.powerups = pygame.sprite.Group()
         self.balls = pygame.sprite.GroupSingle(self.ball)
         self.paddles = pygame.sprite.GroupSingle(self.paddle)
 
@@ -41,6 +44,7 @@ class arkanoidMain:
         while self.run:
             self.brick_break_point()
             self.eventmanager()
+            self.debug()
             self.movement()
             self.lose_screen()
             self.draw(self.screen)
@@ -48,7 +52,9 @@ class arkanoidMain:
             self.clock.tick(60)
         pygame.quit()
 
-
+    def debug(self):
+        if self.debugbool:
+            self.ball.rect.center = pygame.mouse.get_pos()
 
     def lose_screen(self):
         if self.lost:
@@ -67,15 +73,18 @@ class arkanoidMain:
         #bounces off bricks and counts points
         bricks = len(self.bricks.sprites())
         brickslist = pygame.sprite.spritecollide(self.ball, self.bricks, 1)
+        for brick in brickslist:
+            if randint(1, 10) == 6:
+                self.powerups.add(spowerup(brick.rect.center[0], brick.rect.center[1]))
         if len(brickslist) == 1:
             for brick in brickslist:
                 if ((self.ball.rect.top < brick.rect.bottom) and (brick.rect.bottomleft < self.ball.rect.midtop < brick.rect.bottomright) and self.ball_velocity_y < 0):
                     self.ball_velocity_y *= -1
-                elif ((brick.rect.topright < self.ball.rect.bottomleft) and (self.ball.rect.topleft < brick.rect.bottomright) and self.ball_velocity_x < 0):
+                elif ((brick.rect.topright[1] < self.ball.rect.bottomleft[1]) and (self.ball.rect.topleft[1] < brick.rect.bottomright[1]) and self.ball_velocity_x < 0):
                     self.ball_velocity_x *= -1
                 elif ((self.ball.rect.bottom > brick.rect.top) and (brick.rect.topleft < self.ball.rect.midtop < brick.rect.topright) and self.ball_velocity_y > 0):
                     self.ball_velocity_y *= -1
-                elif ((brick.rect.topleft < self.ball.rect.midright < brick.rect.bottomleft) and self.ball_velocity_x > 0):
+                elif ((brick.rect.topleft[1] < self.ball.rect.bottomright[1]) and (self.ball.rect.topright[1] < brick.rect.bottomleft[1]) and self.ball_velocity_x > 0):
                     self.ball_velocity_x *= -1
         else:
             for brick in brickslist:
@@ -136,10 +145,10 @@ class arkanoidMain:
                     if self.ball.rect.midbottom == self.paddle.rect.midtop:
                         self.ball_velocity_y = 8
                     elif self.ball.rect.bottomleft < self.paddle.rect.midtop:
-                        self.ball_velocity_x = -1 * (self.paddle.rect.midtop[0] - self.ball.rect.bottomleft[0])//9
+                        self.ball_velocity_x = -1 * (self.paddle.rect.midtop[0] - self.ball.rect.bottomleft[0]) // 9
                         self.ball_velocity_y = -8 - self.ball_velocity_x
                     elif self.ball.rect.bottomright > self.paddle.rect.midtop:
-                        self.ball_velocity_x = (-1 * (self.paddle.rect.midtop[0] - self.ball.rect.bottomright[0])//9)
+                        self.ball_velocity_x = (-1 * (self.paddle.rect.midtop[0] - self.ball.rect.bottomright[0]) // 9)
                         self.ball_velocity_y = -8 + self.ball_velocity_x
                 elif self.ball.rect.bottom > self.paddle.rect.bottom:
                     self.lost = True
@@ -156,6 +165,7 @@ class arkanoidMain:
         self.balls.draw(surface)
         self.bricks.draw(surface)
         self.paddles.draw(surface)
+        self.powerups.draw(surface)
 
     def eventmanager(self):
         for event in pygame.event.get():
@@ -168,6 +178,9 @@ class arkanoidMain:
                     self.right_arrow_down = True
                 if event.key == pygame.K_SPACE:
                     self.has_space_pressed = True
+                if event.key == pygame.K_KP_MINUS:
+                    self.debugbool = True
+                    
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT:
                     self.left_arrow_down = False
@@ -208,6 +221,21 @@ class ball(pygame.sprite.Sprite):
         self.image = pygame.Surface([width, height])
         self.image.fill((0, 0, 0))
         self.rect = pygame.rect.Rect(self.ball_x, self.ball_y, 10, 10)
+
+class spowerup(pygame.sprite.Sprite):
+
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        width, height = 20, 20
+        self.image = pygame.Surface([width, height])
+        self.powerup_x, self.powerup_y = x, y
+        self.image.fill(self.getrandomcolor())
+        self.rect = pygame.rect.Rect(self.powerup_x, self.powerup_y, width, height)
+
+    def getrandomcolor(self):
+        colors = [(255, 0, 0), (255, 128, 0), (255, 255, 0), (128, 255, 0), (0, 255, 0), (0, 255, 128), (0, 255, 255), (0, 128, 255), (0, 0, 255), (128, 0, 255), (255, 0, 255), (255, 0, 128)]
+        color = colors[randint(1, 11)]
+        return color
 
 if __name__ == "__main__":
     arkanoidMain()
